@@ -1,5 +1,26 @@
 local M = {}
 
+
+local function remove_leading_empty_strings(body)
+    local i = 1
+    while i <= #body and body[i] == "" do
+        table.remove(body, i)
+    end
+end
+
+local function remove_trailing_empty_strings(body)
+    while #body > 0 and body[#body] == "" do
+        table.remove(body, #body)
+    end
+end
+
+local function parse_slide_content(slides)
+    for _, slide in ipairs(slides) do
+        remove_leading_empty_strings(slide.body)
+        remove_trailing_empty_strings(slide.body)
+    end
+end
+
 local function parse_code_blocks(slides)
     local code_delimiter = "^```"
 
@@ -36,8 +57,8 @@ M.parse_slides = function(lines)
         body = {},
         blocks = {},
     }
-    
-    local slide_delimiter = "^#\b"
+
+    local slide_delimiter = "^#"
 
     for _, line in ipairs(lines) do
         if line:find(slide_delimiter) then
@@ -56,12 +77,14 @@ M.parse_slides = function(lines)
     end
 
     if #current_slide.title > 0 then
-        table.insert(slide, current_slide)
+        table.insert(slides, current_slide)
     end
 
     parse_code_blocks(slides)
+    parse_slide_content(slides)
     
     return slides
 end
+
 
 return M

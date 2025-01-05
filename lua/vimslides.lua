@@ -1,3 +1,5 @@
+local parser = require("vimslides.parser")
+
 local M = {}
     
 
@@ -37,11 +39,11 @@ local function create_window_configs()
 
     local body_config = {
         relative = "editor",
-        width = width - 8,
+        width = width - 14,
         height = height - 7,
         style = "minimal",
         border = { ' ' },
-        col = 8,
+        col = 6,
         row = 4,
     }
 
@@ -69,75 +71,12 @@ local function create_floating_window(config, enter)
     local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
     local win = vim.api.nvim_open_win(buf, enter or false, config)
 
+    vim.api.nvim_win_set_option(win, "winhighlight", "Normal:Normal,FloatBorder:Normal")
+
     return {
         buf = buf,
         win = win,
     }
-end
-
-
-local function parse_code_blocks(slides)
-    local code_delimiter = "^```"
-
-    for _, slide in ipairs(slides) do
-        local block = {
-            language = nil,
-            body = "",
-        }
-        local inside_block = false
-
-        for _, line in ipairs(slide.body) do
-            if line:find(code_delimiter) then
-                if not inside_block then
-                    inside_block = true
-                    block.language = string.gsub(line, "```[ \t]*", "", 1)
-                else
-                    inside_block = false
-                    block.body = vim.trim(block.body)
-                    table.insert(slide.blocks, block)
-                end
-            else
-                if inside_block then
-                    block.body = block.body .. line .. '\n'
-                end
-            end
-        end
-    end
-end
-
-local function parse_slides(lines)
-    local slides = {}
-    local current_slide = {
-        title = "",
-        body = {},
-        blocks = {},
-    }
-
-    local slide_delimiter = "^#"
-
-    for _, line in ipairs(lines) do
-        if line:find(slide_delimiter) then
-            if #current_slide.title > 0 then
-                table.insert(slides, current_slide)
-            end
-
-            current_slide = {
-                title = line,
-                body = {},
-                blocks = {},
-            }
-        else
-            table.insert(current_slide.body, line)
-        end
-    end
-
-    if #current_slide.title > 0 then
-        table.insert(slides, current_slide)
-    end
-
-    parse_code_blocks(slides)
-    
-    return slides
 end
 
 
@@ -153,7 +92,7 @@ M.start_presentation = function(opts)
     opts.bufnr = opts.bufnr or 0
 
     local lines = vim.api.nvim_buf_get_lines(opts.bufnr, 0, -1, false)
-    state.slides= parse_slides(lines)
+    state.slides= parser.parse_slides(lines)
     state.current_slide = 1
     state.title = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(opts.bufnr), ":t")
 
@@ -185,12 +124,12 @@ M.start_presentation = function(opts)
         vim.api.nvim_buf_set_lines(state.floats.footer.buf, 0, -1, false, { footer })
     end
 
-    keymap('n', '<Right>', function()
+    keymap('n', '.', function()
         state.current_slide = math.min(state.current_slide + 1, #state.slides)
         set_slide_content(state.current_slide)
     end)
 
-    keymap('n', '<Left>', function()
+    keymap('n', ',', function()
         state.current_slide = math.max(state.current_slide - 1, 1)
         set_slide_content(state.current_slide)
     end)
