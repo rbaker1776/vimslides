@@ -11,75 +11,6 @@ local state = {
     floats = {},
 }
 
-
-local function create_window_configs()
-    local width = vim.o.columns
-    local height = vim.o.lines
-
-    local background_config = {
-        relative = "editor",
-        width = width,
-        height = height,
-        style = "minimal",
-        col = 0,
-        row = 0,
-        zindex = 1,
-    }
-
-    local header_config = {
-        relative = "editor",
-        width = width,
-        height = 1,
-        style = "minimal",
-        border = "rounded",
-        col = 0,
-        row = 0,
-        zindex = 2,
-    }
-
-    local body_config = {
-        relative = "editor",
-        width = width - 14,
-        height = height - 7,
-        style = "minimal",
-        border = { ' ' },
-        col = 6,
-        row = 4,
-    }
-
-    local footer_config = {
-        relative = "editor",
-        width = width,
-        height = 1,
-        style = "minimal",
-        col = 0,
-        row = height - 1,
-        zindex = 3,
-    }
-
-    return {
-        background = background_config,
-        header = header_config,
-        body = body_config,
-        footer = footer_config,
-    }
-end
-
-local function create_floating_window(config, enter)
-    if enter == nil then enter = false end
-
-    local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
-    local win = vim.api.nvim_open_win(buf, enter or false, config)
-
-    vim.api.nvim_win_set_option(win, "winhighlight", "Normal:Normal,FloatBorder:Normal")
-
-    return {
-        buf = buf,
-        win = win,
-    }
-end
-
-
 local function keymap(mode, key, callback)
     vim.keymap.set(mode, key, callback, {
         buffer = state.floats.body.buf
@@ -110,8 +41,8 @@ M.start_presentation = function(opts)
         local width = vim.o.columns
         local slide = state.slides[idx]
 
-        local padding = string.rep(" ", (width - #slide.title) / 2)
-        local title = padding .. slide.title
+        local padding = string.rep(' ', (width - #slide.title.text) / 2)
+        local title = '#' .. padding .. string.sub(slide.title.text, 2)
         vim.api.nvim_buf_set_lines(state.floats.header.buf, 0, -1, false, { title })
         vim.api.nvim_buf_set_lines(state.floats.body.buf, 0, -1, false, slide.body)
 
